@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채점 결과</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #2980b9;
+        }
+
+        .upload-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .upload-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #27ae60;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #229954;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .tab-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .results-table {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.5em;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        .rank-1 { background: #f1c40f; }
+        .rank-2 { background: #95a5a6; }
+        .rank-3 { background: #cd7f32; }
+        .rank-other { background: #3498db; }
+
+        .score-high { background: #27ae60; }
+        .score-medium { background: #f39c12; }
+        .score-low { background: #e74c3c; }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 채점 결과</h1>
+            <p style="color: #7f8c8d; margin-top: 10px;">BGK 70% + 관객 30% = 최종 점수 ÷ 2</p>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="index.html" class="back-btn">← 채점 페이지로 돌아가기</a>
+                <button id="deleteAllBtn" class="back-btn" style="background: #e74c3c; border: none; cursor: pointer;">
+                    🗑️ 전체 데이터 삭제
+                </button>
+            </div>
+        </div>
+
+        <!-- <div class="upload-section">
+            <h3>📄 관객 투표 점수</h3>
+            <p id="audienceStatus" style="color: #7f8c8d;">
+                파일 로딩 중... (a.txt)
+            </p>
+        </div> -->
+
+        <div id="loading" class="loading">데이터 로딩 중...</div>
+
+        <div id="mainContent" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('final')">🏆 최종 결과</button>
+                <button class="tab-btn" onclick="switchTab('raw')">📋 Raw Data</button>
+            </div>
+
+            <!-- Tab 1: 최종 결과 -->
+            <div id="finalTab" class="tab-content active">
+                <div class="results-table">
+                    <h2 style="margin-bottom: 20px; color: #333;">최종 순위 (대결 방식)</h2>
+                    <p style="color: #7f8c8d; margin-bottom: 20px;">
+                        각 카테고리에서 2명씩 대결 → 높은 점수가 1등, 낮은 점수가 2등
+                    </p>
+                    
+                    <!-- 대결 1: 검사/품질 -->
+                    <h3 style="color: #3498db; margin: 20px 0 10px 0;">🏆 검사/품질 부문</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>후보자</th>
+                                <th>BGK 평균<br>(70%)</th>
+                                <th>관객 투표<br>(30%)</th>
+                                <th>합계</th>
+                                <th>최종 점수<br>(÷2)</th>
+                                <th>채점한 BGK 수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group1Body">
+                        </tbody>
+                    </table>
+
+                    <!-- 대결 2: 운영/생산 -->
+                    <h3 style="color: #3498db; margin: 30px 0 10px 0;">🏆 운영/생산 부문</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>후보자</th>
+                                <th>BGK 평균<br>(70%)</th>
+                                <th>관객 투표<br>(30%)</th>
+                                <th>합계</th>
+                                <th>최종 점수<br>(÷2)</th>
+                                <th>채점한 BGK 수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group2Body">
+                        </tbody>
+                    </table>
+
+                    <!-- 대결 3: 공정/설비 -->
+                    <h3 style="color: #3498db; margin: 30px 0 10px 0;">🏆 공정/설비 부문</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>후보자</th>
+                                <th>BGK 평균<br>(70%)</th>
+                                <th>관객 투표<br>(30%)</th>
+                                <th>합계</th>
+                                <th>최종 점수<br>(÷2)</th>
+                                <th>채점한 BGK 수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group3Body">
+                        </tbody>
+                    </table>
+
+                    <!-- 대결 4: 설계/개발 -->
+                    <h3 style="color: #3498db; margin: 30px 0 10px 0;">🏆 설계/개발 부문</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>후보자</th>
+                                <th>BGK 평균<br>(70%)</th>
+                                <th>관객 투표<br>(30%)</th>
+                                <th>합계</th>
+                                <th>최종 점수<br>(÷2)</th>
+                                <th>채점한 BGK 수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group4Body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 2: Raw Data -->
+            <div id="rawTab" class="tab-content">
+                <div class="results-table">
+                    <h2 style="margin-bottom: 20px; color: #333;">전체 채점 내역 (최신순)</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>시간</th>
+                                <th>평가자</th>
+                                <th>후보자</th>
+                                <th>Idea 발굴</th>
+                                <th>실효과</th>
+                                <th>Biz 파급효과</th>
+                                <th>총점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rawDataBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // ========================================
+        // THAY CONFIG GIỐNG FILE INDEX.HTML
+        // ========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4kO0rxRLfnLnPIwr6mtgLs0utzVS_qMk",
+            authDomain: "scoring-system-4993c.firebaseapp.com",
+            projectId: "scoring-system-4993c",
+            storageBucket: "scoring-system-4993c.firebasestorage.app",
+            messagingSenderId: "9687384907",
+            appId: "1:9687384907:web:50e9969d943076c924dece"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Chia thành 4 nhóm đấu
+        const groups = [
+            { name: "검사/품질", contestants: ["검사/품질 1", "검사/품질 2"], bodyId: "group1Body" },
+            { name: "운영/생산", contestants: ["운영/생산 1", "운영/생산 2"], bodyId: "group2Body" },
+            { name: "공정/설비", contestants: ["공정/설비 1", "공정/설비 2"], bodyId: "group3Body" },
+            { name: "설계/개발", contestants: ["설계/개발 1", "설계/개발 2"], bodyId: "group4Body" }
+        ];
+
+        let audienceScores = {};
+        let allScores = [];
+
+        // Auto load audience scores from a.txt
+        async function loadAudienceScores() {
+            try {
+                const response = await fetch('a.txt');
+                if (!response.ok) {
+                    throw new Error('파일을 찾을 수 없습니다');
+                }
+                const text = await response.text();
+                audienceScores = parseAudienceScores(text);
+                
+                const statusEl = document.getElementById('audienceStatus');
+                if (statusEl) {
+                    statusEl.style.color = '#27ae60';
+                    statusEl.innerHTML = `✅ 관객 투표 로드 완료: ${Object.keys(audienceScores).length}명<br><small>파일: a.txt</small>`;
+                }
+                
+                if (allScores.length > 0) {
+                    calculateFinalResults();
+                }
+            } catch (error) {
+                console.error('파일 로드 오류:', error);
+                const statusEl = document.getElementById('audienceStatus');
+                if (statusEl) {
+                    statusEl.style.color = '#e74c3c';
+                    statusEl.innerHTML = `❌ a.txt 파일을 찾을 수 없습니다<br><small>같은 폴더에 a.txt 파일을 만들어주세요</small>`;
+                }
+            }
+        }
+
+        // Switch tabs
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'final') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('finalTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('rawTab').classList.add('active');
+            }
+        };
+
+        function parseAudienceScores(text) {
+            const scores = {};
+            const lines = text.split('\n');
+            
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                
+                const match = line.match(/^(.+?):\s*(\d+(?:\.\d+)?)$/);
+                if (match) {
+                    const name = match[1].trim();
+                    const score = parseFloat(match[2]);
+                    scores[name] = score;
+                }
+            });
+            
+            return scores;
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate();
+            return date.toLocaleString('ko-KR', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function getScoreBadgeClass(score) {
+            if (score >= 80) return 'score-high';
+            if (score >= 50) return 'score-medium';
+            return 'score-low';
+        }
+
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-other';
+        }
+
+        async function loadResults() {
+            try {
+                console.log('🔍 Bắt đầu load dữ liệu từ Firebase...');
+                const q = query(collection(db, "scores"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                console.log('📊 Số lượng documents:', querySnapshot.size);
+
+                if (querySnapshot.empty) {
+                    console.log('⚠️ Database trống!');
+                    document.getElementById('loading').innerHTML = 
+                        '<div class="no-data">아직 채점 데이터가 없습니다.<br>먼저 index.html에서 채점을 진행해주세요.</div>';
+                    return;
+                }
+
+                allScores = [];
+                querySnapshot.forEach((doc) => {
+                    console.log('✅ Document:', doc.data());
+                    allScores.push(doc.data());
+                });
+
+                displayRawData();
+                calculateFinalResults();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+            } catch (error) {
+                console.error('❌ Lỗi Firebase:', error);
+                console.error('❌ Error code:', error.code);
+                console.error('❌ Error message:', error.message);
+                document.getElementById('loading').innerHTML = 
+                    `<div class="no-data">
+                        ❌ Lỗi: ${error.message}<br>
+                        <small>Code: ${error.code}</small><br>
+                        <small style="color: #e74c3c;">Mở F12 Console để xem chi tiết</small>
+                    </div>`;
+            }
+        }
+
+        function displayRawData() {
+            const tbody = document.getElementById('rawDataBody');
+            tbody.innerHTML = '';
+
+            allScores.forEach(data => {
+                const row = `
+                    <tr>
+                        <td>${formatDate(data.timestamp)}</td>
+                        <td><strong>${data.judgeName}</strong></td>
+                        <td>${data.contestantName}</td>
+                        <td>${data.innovationScore}</td>
+                        <td>${data.presentationScore}</td>
+                        <td>${data.technicalScore}</td>
+                        <td>
+                            <span class="score-badge ${getScoreBadgeClass(data.totalScore)}">
+                                ${data.totalScore.toFixed(1)}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function calculateFinalResults() {
+            groups.forEach(group => {
+                const results = [];
+
+                group.contestants.forEach(contestant => {
+                    // Lấy điểm cuối cùng của mỗi BGK cho thí sinh này
+                    const judgeLatestScores = {};
+                    
+                    allScores.forEach(score => {
+                        if (score.contestantName === contestant) {
+                            if (!judgeLatestScores[score.judgeName]) {
+                                judgeLatestScores[score.judgeName] = score.totalScore;
+                            }
+                        }
+                    });
+
+                    const judgeScoresArray = Object.values(judgeLatestScores);
+                    const judgeCount = judgeScoresArray.length;
+
+                    if (judgeCount === 0) return;
+
+                    // Tính trung bình BGK
+                    const bgkAvg = judgeScoresArray.reduce((a, b) => a + b, 0) / judgeCount;
+
+                    // Điểm khán giả
+                    const audienceScore = audienceScores[contestant] || 0;
+
+                    // Tính điểm cuối
+                    const bgkWeighted = bgkAvg * 0.7;
+                    const audienceWeighted = audienceScore * 0.3;
+                    const total = bgkWeighted + audienceWeighted;
+                    const finalScore = total / 2;
+
+                    results.push({
+                        contestant,
+                        bgkAvg: bgkAvg.toFixed(2),
+                        bgkWeighted: bgkWeighted.toFixed(2),
+                        audienceScore: audienceScore.toFixed(2),
+                        audienceWeighted: audienceWeighted.toFixed(2),
+                        total: total.toFixed(2),
+                        finalScore: finalScore.toFixed(2),
+                        judgeCount
+                    });
+                });
+
+                // Sắp xếp theo điểm cuối giảm dần trong nhóm
+                results.sort((a, b) => parseFloat(b.finalScore) - parseFloat(a.finalScore));
+
+                displayGroupResults(results, group.bodyId);
+            });
+        }
+
+        function displayGroupResults(results, bodyId) {
+            const tbody = document.getElementById(bodyId);
+            tbody.innerHTML = '';
+
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">채점 데이터가 없습니다</td></tr>';
+                return;
+            }
+
+            results.forEach((result, index) => {
+                const rank = index + 1; // 1 hoặc 2
+                const rankText = rank === 1 ? "1등" : "2등";
+                const row = `
+                    <tr>
+                        <td>
+                            <span class="score-badge ${getRankClass(rank)}">
+                                ${rankText}
+                            </span>
+                        </td>
+                        <td><strong>${result.contestant}</strong></td>
+                        <td>${result.bgkAvg}<br><small>(${result.bgkWeighted})</small></td>
+                        <td>${result.audienceScore}<br><small>(${result.audienceWeighted})</small></td>
+                        <td><strong>${result.total}</strong></td>
+                        <td>
+                            <span class="score-badge ${getScoreBadgeClass(parseFloat(result.finalScore) * 2)}">
+                                ${result.finalScore}
+                            </span>
+                        </td>
+                        <td>${result.judgeCount} / 7</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Load data
+        loadAudienceScores();
+        loadResults();
+
+        // Auto refresh every 30 seconds
+        setInterval(loadResults, 30000);
+
+        // Delete all data
+        document.getElementById('deleteAllBtn').addEventListener('click', async function() {
+            const confirmed = confirm('⚠️ 경고: 모든 채점 데이터가 영구적으로 삭제됩니다!\n\n정말로 삭제하시겠습니까?');
+            if (!confirmed) return;
+
+            const doubleConfirm = confirm('🚨 마지막 확인: 삭제된 데이터는 복구할 수 없습니다!\n\n계속하시겠습니까?');
+            if (!doubleConfirm) return;
+
+            try {
+                this.disabled = true;
+                this.textContent = '삭제 중...';
+
+                const q = query(collection(db, "scores"));
+                const querySnapshot = await getDocs(q);
+
+                let deleteCount = 0;
+                const deletePromises = [];
+
+                querySnapshot.forEach((document) => {
+                    deletePromises.push(deleteDoc(doc(db, "scores", document.id)));
+                    deleteCount++;
+                });
+
+                await Promise.all(deletePromises);
+
+                alert(`✅ 성공: ${deleteCount}개의 데이터가 삭제되었습니다!`);
+                
+                // Reload page
+                location.reload();
+
+            } catch (error) {
+                console.error('❌ 삭제 오류:', error);
+                alert('삭제 실패: ' + error.message);
+                this.disabled = false;
+                this.textContent = '🗑️ 전체 데이터 삭제';
+            }
+        });
+    </script>
+</body>
+</html>
